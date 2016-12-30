@@ -1,38 +1,88 @@
-angular.module('App', []).controller('MainController', ['$scope', '$filter', function ($scope, $filter) {
-  $scope.todos = [];
+angular.module('App', []).service('todos', ['$rootScope', '$filter', function ($scope, $filter) {
+  var list = [];
 
+  $scope.$watch(function () {
+    return list;
+  }, function (value) {
+    $scope.$broadcast('change:list', value);
+  }, true);
+
+  var where = $filter('filter');
+
+  var done = { done: true };
+  var remaining = { done: false };
+
+  this.filter = {
+    done: done,
+    remaining: remaining
+  };
+
+  this.getDone = function () {
+    return where(list, done);
+  };
+
+  this.add = function (title) {
+    list.push({
+      title: title,
+      done: false
+    });
+  };
+
+  this.remove = function (currentTodo) {
+    list = where(list, function (todo) {
+      return currentTodo !== todo;
+    });
+  };
+
+  this.removeDone = function () {
+    list = where(list, remaining);
+  };
+
+  this.changeState = function (state) {
+    angular.forEach(list, function (todo) {
+      todo.done = state;
+    });
+  };
+}])
+.controller('RegisterController', ['$scope', 'todos', function ($scope, todos) {
   $scope.newTitle = '';
 
   $scope.addTodo = function () {
-    $scope.todos.push({
-      title: $scope.newTitle,
-      done: false
-    });
-
+    todos.add($scope.newTitle);
     $scope.newTitle = '';
   };
+}])
+.controller('ToolbarController', ['$scope', 'todos', function ($scope, todos) {
+    $scope.filter = todos.filter;
 
-  $scope.filter = {
-    done: { done: true },
-    remaining: { done: false }
-  };
+    $scope.$on('change:list', function (evt, list) {
+      var length = list.length;
+      var doneCount = todos.getDone().length;
 
-  $scope.currentFilter = null;
+      $scope.allCount = length;
+      $scope.doneCount = doneCount;
+      $scope.remainingCount = length - doneCount;
+    });
 
-  $scope.changeFilter = function (filter) {
-    $scope.currentFilter = filter;
-  };
+    $scope.checkAll = function () {
+      todos.changeState(!!$scope.remainingCount);
+    };
 
-  var where = $filter('filter');
-  $scope.$watch('todos', function (todos) {
-    var length = todos.length;
+    $scope.changeFilter = function (filter) {
+      $scope.$emit('change:filter', filter);
+    };
 
-    $scope.allCount = length;
-    $scope.doneCount = where(todos, $scope.filter.done).length;
-    $scope.remainingCount = length - $scope.doneCount;
-  }, true);
+    $scope.removeDoneTodo = function () {
+      todos.removeDone();
+    };
+}])
+.controller('TodoListController', ['$scope', 'todos', function ($scope, todos) {
+  $scope.$on('change:list', function (evt, list) {
+    $scope.todoList = list;
+  });
 
   var originalTitle;
+
   $scope.editing = null;
 
   $scope.editTodo = function (todo) {
@@ -42,28 +92,21 @@ angular.module('App', []).controller('MainController', ['$scope', '$filter', fun
 
   $scope.doneEdit = function (todoForm) {
     if (todoForm.$invalid) {
-      $scope.editing = originalTitle = null;
+      $scope.editing.title = originalTitle;
     }
     $scope.editing = originalTitle = null;
   };
 
-  $scope.checkAll = function () {
-    var state = !!$scope.remainingCount;
-
-    angular.forEach($scope.todos, function (todo) {
-      todo.done = state;
-    });
+  $scope.removeTodo = function (todo) {
+    todos.remove(todo);
   };
+}])
+.controller('MainController', ['$scope', function ($scope) {
+  $scope.currentFilter = null;
 
-  $scope.removeDoneTodo = function () {
-    $scope.todos = where($scope.todos, $scope.filter.remaining);
-  };
-
-  $scope.removeTodo = function (currentTodo) {
-    $scope.todos = where($scope.todos, function (todo) {
-      return currentTodo !== todo;
-    });
-  };
+  $scope.$on('change:filter', function (evt, filter) {
+    $scope.currentFilter = filter;
+  });
 }])
 .directive('mySelect', [function () {
   return function (scope, $el, attrs) {
