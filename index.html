@@ -41,7 +41,7 @@
       <hr>
 
       <ul class='list-unstyled'>
-        <li class='todo-item' ng-repeat='todo in todos' ng-class="{ done: todo.done }">
+        <li class='todo-item' ng-repeat='todo in todos | filter:currentFilter' ng-class='{ done: todo.done }'>
           <form class='input-group input-group-lg'>
             <label class='input-group-addon'>
               <input type='checkbox' ng-model='todo.done'>
