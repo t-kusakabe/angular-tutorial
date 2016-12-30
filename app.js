@@ -1,4 +1,4 @@
-angular.module('App', ['LocationBar']).controller('MainController', ['$scope', function ($scope) {
+angular.module('App', []).controller('MainController', ['$scope', function ($scope) {
   $scope.todos = [];
 
   $scope.newTitle = '';
@@ -10,5 +10,16 @@ angular.module('App', ['LocationBar']).controller('MainController', ['$scope', f
     });
 
     $scope.newTitle = '';
+  };
+
+  $scope.filter = {
+    done: { done: true },
+    remaining: { done: false }
+  };
+
+  $scope.currentFilter = null;
+
+  $scope.changeFilter = function (filter) {
+    $scope.currentFilter = filter;
   };
 }]);
